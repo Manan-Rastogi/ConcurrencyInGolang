@@ -709,7 +709,153 @@ Occurs when a thread or process is perpetually denied access to a resource, prev
 - **Minimize Critical Section:** Keep the code within the critical section (protected by a mutex) as short as possible to reduce contention.
 - **Avoid Deadlocks:** Design your locking strategy carefully to avoid cyclic dependencies.
 - **Use Higher-Level Abstractions:** When possible, use higher-level synchronization primitives like channels (in Go) to simplify concurrency management and avoid common pitfalls.
+---
 
+Sure, here are detailed notes covering the four questions regarding mutex usage in Go:
+
+---
+
+# Confusion regarding Mutex:
+
+## 1. What memory is blocked by a mutex?
+
+### Overview:
+A mutex in Go is used to block access to shared resources to ensure data integrity and prevent race conditions. It locks access to memory locations where shared variables or data structures are stored.
+
+### Example Code:
+```go
+package main
+
+import (
+    "fmt"
+    "sync"
+)
+
+var (
+    counter int
+    mu      sync.Mutex // Declaring a global mutex
+)
+
+func increment() {
+    mu.Lock()           // Locking the mutex before accessing shared variable
+    counter++
+    mu.Unlock()         // Unlocking the mutex after modifying shared variable
+}
+
+func main() {
+    for i := 0; i < 5; i++ {
+        go increment()  // Concurrently incrementing the shared variable
+    }
+}
+```
+
+## 2. Is it memory of the program or memory of the function it is called in?
+
+### Overview:
+A mutex in Go locks access to memory within the scope where it's used. It can be used within a function, method, or even at a higher level like package-level scope.
+
+### Example Code:
+```go
+package main
+
+import (
+    "fmt"
+    "sync"
+)
+
+var mu sync.Mutex // Declaring a global mutex
+
+func someFunction() {
+    mu.Lock()       // Locking the mutex within a function
+    defer mu.Unlock()
+    // Access and modify shared memory here
+}
+
+func main() {
+    someFunction()  // Calling function with mutex
+}
+```
+
+## 3. When we use a mutex in a struct, does it block the memory of this struct's object only?
+
+### Overview:
+When a mutex is used within a struct in Go, it typically guards access to the data fields (memory) of that struct. It ensures that only one goroutine can modify the struct's data at a time, preventing race conditions.
+
+### Example Code:
+```go
+package main
+
+import (
+    "fmt"
+    "sync"
+)
+
+type Data struct {
+    mu sync.Mutex    // Mutex within a struct
+    // other fields...
+}
+
+func (d *Data) ModifyData() {
+    d.mu.Lock()       // Locking mutex within a struct method
+    defer d.mu.Unlock()
+    // Access and modify struct fields here
+}
+
+func main() {
+    data := Data{}
+    data.ModifyData()  // Calling struct method with mutex
+}
+```
+
+## 4. While working with files using a mutex in a function, will it block the memory of this opened file?
+
+### Overview:
+When a mutex is used within a function to protect access to a file in Go, it only blocks access to the file's data within the scope of that function. It does not block the entire program's memory or the memory of the opened file itself.
+
+### Example Code:
+```go
+package main
+
+import (
+    "fmt"
+    "os"
+    "sync"
+)
+
+var fileMutex sync.Mutex
+
+func writeFile(fileName string, data string) error {
+    fileMutex.Lock()          // Locking mutex before accessing file
+    defer fileMutex.Unlock()
+    
+    // Open file
+    file, err := os.OpenFile(fileName, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+    if err != nil {
+        return err
+    }
+    defer file.Close()
+    
+    // Write data to file
+    _, err = file.WriteString(data)
+    if err != nil {
+        return err
+    }
+    
+    return nil
+}
+
+func main() {
+    // Usage of mutex to write to file within a function
+    err := writeFile("example.txt", "Hello, World!")
+    if err != nil {
+        fmt.Println("Error:", err)
+        return
+    }
+    fmt.Println("Data written to file successfully.")
+}
+```
+
+---
 
 
 ---
