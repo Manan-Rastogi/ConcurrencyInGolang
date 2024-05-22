@@ -1,6 +1,6 @@
 # Learning Concurrency in Go [Notes By ChatGPT]
-
 ---
+
 
 ## Understanding Concurrency
 
@@ -356,3 +356,138 @@ func main() {
 
 ---
 ---
+
+### Lesser-Known Facts About Goroutines
+
+1. **Unpredictable Execution Order:**
+   - You cannot predict the order in which goroutines will execute. The Go scheduler determines the execution order, which can vary each time the program runs.
+
+2. **Goroutine Stack Size:**
+   - Goroutines start with a small stack size of about 2KB, which can dynamically grow and shrink as needed. This makes them very memory-efficient compared to traditional threads.
+
+3. **Goroutine Leaks:**
+   - If a goroutine blocks forever or isn't properly terminated, it can lead to a goroutine leak, consuming system resources indefinitely.
+
+4. **Panic Propagation:**
+   - If a goroutine panics and the panic is not recovered, it will terminate that particular goroutine. However, the panic does not propagate to other goroutines or the main function, unless explicitly passed through a shared channel.
+
+5. **Scheduler's Cooperative Multitasking:**
+   - The Go scheduler uses a form of cooperative multitasking, meaning goroutines are not preempted arbitrarily by the scheduler. Instead, goroutines must yield control by making blocking calls or executing specific runtime functions.
+
+6. **GOMAXPROCS Setting:**
+   - The `runtime.GOMAXPROCS` function sets the maximum number of operating system threads that can execute user-level Go code simultaneously. By default, it is set to the number of CPU cores available.
+
+7. **No Built-In Goroutine Limit:**
+   - Go does not impose a strict limit on the number of goroutines you can create. However, the practical limit is determined by available system memory and CPU resources.
+
+8. **Goroutine Dump:**
+   - You can obtain a goroutine dump (stack traces of all goroutines) by sending a `SIGQUIT` signal to a Go program running on Unix-based systems, or by using the `runtime/pprof` package.
+
+9. **Network Polling:**
+   - Go's runtime includes a network poller that uses a separate goroutine to efficiently handle I/O operations like network requests. This helps in managing thousands of network connections with minimal overhead.
+
+10. **Idle Goroutine Reuse:**
+    - The Go scheduler can reuse idle goroutines, which helps in reducing the overhead of creating and destroying goroutines repeatedly.
+
+### Examples Illustrating Some of These Facts
+
+**Unpredictable Execution Order:**
+
+```go
+package main
+
+import (
+    "fmt"
+    "time"
+)
+
+func printMessage(message string) {
+    fmt.Println(message)
+}
+
+func main() {
+    go printMessage("First Goroutine")
+    go printMessage("Second Goroutine")
+    go printMessage("Third Goroutine")
+
+    time.Sleep(time.Second) // Give goroutines time to complete
+}
+```
+
+**GOMAXPROCS Setting:**
+
+```go
+package main
+
+import (
+    "fmt"
+    "runtime"
+)
+
+func main() {
+    fmt.Println("GOMAXPROCS before:", runtime.GOMAXPROCS(0)) // Get current GOMAXPROCS value
+    runtime.GOMAXPROCS(2)                                     // Set GOMAXPROCS to 2
+    fmt.Println("GOMAXPROCS after:", runtime.GOMAXPROCS(0))  // Confirm new GOMAXPROCS value
+}
+```
+
+**Panic Propagation:**
+
+```go
+package main
+
+import (
+    "fmt"
+    "time"
+)
+
+func safeGoroutine() {
+    defer func() {
+        if r := recover(); r != nil {
+            fmt.Println("Recovered from panic:", r)
+        }
+    }()
+    panic("Something went wrong!")
+}
+
+func main() {
+    go safeGoroutine()
+    time.Sleep(time.Second) // Give goroutine time to complete
+    fmt.Println("Main function continues")
+}
+```
+
+**Goroutine Dump:**
+
+```go
+package main
+
+import (
+    "fmt"
+    "runtime"
+    "time"
+)
+
+func main() {
+    go func() {
+        for {
+            fmt.Println("Goroutine running")
+            time.Sleep(time.Second)
+        }
+    }()
+
+    time.Sleep(5 * time.Second)
+
+    buf := make([]byte, 1<<16)
+    runtime.Stack(buf, true)
+    fmt.Printf("Goroutine dump:\n%s", buf)
+}
+```
+
+These examples and facts should provide a deeper understanding of the inner workings and behaviors of goroutines in Go.
+
+
+---
+---
+
+NOTE: Code in the repo is from an Udemy Course
