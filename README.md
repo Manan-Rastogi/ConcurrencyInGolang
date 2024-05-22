@@ -488,9 +488,6 @@ These examples and facts should provide a deeper understanding of the inner work
 
 
 ---
----
-
-Sure, let's dive into race conditions and mutexes, covering the topics in detail and keeping the explanations simple yet comprehensive.
 
 ---
 
